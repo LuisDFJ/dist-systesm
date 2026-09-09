@@ -1,5 +1,6 @@
 package shared
 
+type WorkerId int;
 type WorkerState int;
 
 const (
@@ -9,25 +10,32 @@ const (
 	EXIT
 )
 
-type ReqGetWork struct {
+type TaskId int
 
+type TaskParameters struct {
+	Id TaskId
+	File string
+	Bucket WorkerId
 }
 
-type ResGetWork struct {
-
+type ArgGetTask struct {
+	Id WorkerId
 }
 
-type ReqEndWork struct {
-
+type ResGetTask struct {
+	State WorkerState
+	Params TaskParameters
 }
 
-type ResEndWork struct {
-
+type ArgFinishTask struct {
+	Id WorkerId
+	Type WorkerState
 }
+type ResFinishTask struct {}
 
 
 type CoordinatorRCP interface {
-	GetWork( req ReqGetWork, res *ResGetWork ) error
-	EndWork( req ReqEndWork, res *ResEndWork ) error
+	GetTask( arg *ArgGetTask, res *ResGetTask ) error
+	FinishTask( arg *ArgFinishTask, res *ResFinishTask ) error
 }
 
