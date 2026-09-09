@@ -23,13 +23,13 @@ type ArgGetTask struct {
 }
 
 type ResGetTask struct {
-	State WorkerState
-	Params TaskParameters
+	State 	WorkerState
+	Params 	TaskParameters
 }
 
 type ArgFinishTask struct {
-	Id WorkerId
-	Type WorkerState
+	Id 		TaskId
+	Type 	WorkerState
 }
 type ResFinishTask struct {}
 
