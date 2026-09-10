@@ -15,7 +15,7 @@ type TaskId int
 type TaskParameters struct {
 	Id TaskId
 	File string
-	Bucket WorkerId
+	Bucket int
 }
 
 type ArgGetTask struct {
@@ -33,9 +33,15 @@ type ArgFinishTask struct {
 }
 type ResFinishTask struct {}
 
+type ArgRegister struct {}
+type ResRegister struct {
+	N 	int
+	Id 	WorkerId
+}
 
-type CoordinatorRCP interface {
-	GetTask( arg *ArgGetTask, res *ResGetTask ) error
-	FinishTask( arg *ArgFinishTask, res *ResFinishTask ) error
+type CoordinatorRPC interface {
+	Register( arg ArgRegister, res *ResRegister ) error
+	GetTask( arg ArgGetTask, res *ResGetTask ) error
+	FinishTask( arg ArgFinishTask, res *ResFinishTask ) error
 }
 

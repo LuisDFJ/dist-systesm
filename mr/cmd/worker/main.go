@@ -4,12 +4,57 @@ import (
 	"fmt"
 	"mr/shared"
 	"net/rpc"
+	"time"
 )
 
-func log( s string ) {
-	fmt.Println("[WORKER] :", s)
+
+type Worker struct {
+	socket string
+	id shared.WorkerId
+	n  int
 }
 
+func New( socket string ) (*Worker,error) {
+	worker := Worker {
+		socket:socket,
+	}
+	resp := shared.ResRegister{}
+	err := worker.Register(shared.ArgRegister{}, &resp)
+	if err != nil {
+		worker.log(err.Error())
+	}
+	worker.id = resp.Id
+	worker.n  = resp.N
+	return &worker,err
+}
+
+func (w *Worker) log( s string ) {
+	fmt.Printf("[WORKER %v/%v] : %s\n", w.id, w.n, s)
+}
+
+func (w *Worker) Map( file string ) error {
+	w.log( "Working on Map ..." )
+	time.Sleep(time.Second)
+	return nil
+}
+
+func (w *Worker) Reduce( bucket int ) error {
+	w.log( "Working on Reduce ..." )
+	time.Sleep(time.Second)
+	return nil
+}
+
+func (w *Worker) Register( args shared.ArgRegister, resp *shared.ResRegister ) error {
+	return call(w.socket, "Coordinator.Register", args, resp)
+}
+
+func (w *Worker) GetTask( args shared.ArgGetTask, resp *shared.ResGetTask ) error {
+	return call(w.socket, "Coordinator.GetTask", args, resp)
+}
+
+func (w *Worker) FinishTask( args shared.ArgFinishTask, resp *shared.ResFinishTask ) error {
+	return call(w.socket, "Coordinator.FinishTask", args, resp)
+}
 
 func call( socket string, f string, args any, resp any ) error {
 	client, err := rpc.DialHTTP("tcp", "localhost" + socket)
@@ -25,15 +70,43 @@ func call( socket string, f string, args any, resp any ) error {
 }
 
 func main() {
-
-	args := shared.ReqGetWork{}
-	resp := shared.ResGetWork{}
-
-	err := call(":1234", "Coordinator.GetWork", &args, &resp)
-	if err != nil {
-		log(err.Error())
+	time.Sleep(time.Second)
+	w,err := New(":1234")
+	if err != nil { return }
+	for {
+		time.Sleep(time.Second)
+		args := shared.ArgGetTask{}
+		resp := shared.ResGetTask{}
+		err := w.GetTask(args,&resp)
+		if err != nil {
+			w.log(err.Error())
+			break
+		}
+		switch resp.State {
+			case shared.MAP:
+				if w.Map(resp.Params.File) != nil {
+					break
+				}
+				w.log( "Finished Map Task File: " + resp.Params.File )
+			case shared.REDUCE:
+				if w.Reduce(resp.Params.Bucket) != nil {
+					break
+				}
+				w.log( "Finished Reduce Task Bucket: " + string(resp.Params.Bucket) )
+			case shared.IDLE:
+				continue
+			case shared.EXIT:
+				break
+		}
+		finishArgs := shared.ArgFinishTask{
+			Id: resp.Params.Id,
+			Type: resp.State,
+		}
+		err = w.FinishTask( finishArgs, &shared.ResFinishTask{} )
+		if err != nil {
+			w.log( err.Error() )
+		}
 	}
-
-	fmt.Printf( "%v \n", resp )
+	w.log("Exiting Worker")
 }
 
