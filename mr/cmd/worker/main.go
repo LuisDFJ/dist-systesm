@@ -7,7 +7,6 @@ import (
 	"time"
 )
 
-
 type Worker struct {
 	socket string
 	id shared.WorkerId
@@ -29,7 +28,7 @@ func New( socket string ) (*Worker,error) {
 }
 
 func (w *Worker) log( s string ) {
-	fmt.Printf("[WORKER %v/%v] : %s\n", w.id, w.n, s)
+	fmt.Printf("[WORKER %v/%v] : %s\n", w.id+1, w.n, s)
 }
 
 func (w *Worker) Map( file string ) error {
@@ -73,6 +72,7 @@ func main() {
 	time.Sleep(time.Second)
 	w,err := New(":1234")
 	if err != nil { return }
+	Loop:
 	for {
 		time.Sleep(time.Second)
 		args := shared.ArgGetTask{}
@@ -80,23 +80,23 @@ func main() {
 		err := w.GetTask(args,&resp)
 		if err != nil {
 			w.log(err.Error())
-			break
+			break Loop
 		}
 		switch resp.State {
 			case shared.MAP:
 				if w.Map(resp.Params.File) != nil {
-					break
+					break Loop
 				}
 				w.log( "Finished Map Task File: " + resp.Params.File )
 			case shared.REDUCE:
 				if w.Reduce(resp.Params.Bucket) != nil {
-					break
+					break Loop
 				}
-				w.log( "Finished Reduce Task Bucket: " + string(resp.Params.Bucket) )
+				w.log( fmt.Sprintf("Finished Reduce Task Bucket: %v", resp.Params.Bucket) )
 			case shared.IDLE:
-				continue
+				continue Loop
 			case shared.EXIT:
-				break
+				break Loop
 		}
 		finishArgs := shared.ArgFinishTask{
 			Id: resp.Params.Id,

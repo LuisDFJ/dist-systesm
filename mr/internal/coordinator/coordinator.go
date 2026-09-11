@@ -23,11 +23,11 @@ func New ( socket string, files []string, workers int ) *Coordinator {
 		mapTasks:[]*MapTask{},
 		reduceTasks:[]*ReduceTask{},
 	}
-	for id, file := range files {
-		c.mapTasks[id] = &MapTask{file:file}
+	for i := range files {
+		c.mapTasks = append(c.mapTasks, &MapTask{file:files[i]} )
 	}
 	for id := range workers {
-		c.reduceTasks[id] = &ReduceTask{bucket:id}
+		c.reduceTasks = append(c.reduceTasks, &ReduceTask{bucket:id} )
 	}
 	c.server( socket )
 	return &c
