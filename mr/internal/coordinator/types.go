@@ -12,8 +12,8 @@ type Coordinator struct {
 	state CoordinatorState
 	counter int
 	workers int
-	mapTasks map[int]*MapTask
-	reduceTasks map[int]*ReduceTask
+	mapTasks []*MapTask
+	reduceTasks []*ReduceTask
 	done bool
 }
 
