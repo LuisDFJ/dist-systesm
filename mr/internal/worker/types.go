@@ -8,5 +8,6 @@ type Worker struct {
 	socket string
 	id shared.WorkerId
 	n  int
+	toCommit []string
 }
 

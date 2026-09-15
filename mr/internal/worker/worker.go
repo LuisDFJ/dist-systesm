@@ -8,6 +8,7 @@ import (
 func New( socket string ) (*Worker,error) {
 	worker := Worker {
 		socket:socket,
+		toCommit:[]string{},
 	}
 	resp := shared.ResRegister{}
 	err := worker.Register(shared.ArgRegister{}, &resp)

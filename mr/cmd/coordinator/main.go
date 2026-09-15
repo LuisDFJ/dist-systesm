@@ -7,7 +7,7 @@ import (
 
 func main() {
 	done := make(chan bool)
-	c := coordinator.New( ":1234", []string{"file1.txt", "file2.txt"}, 10 )
+	c := coordinator.New( ":1234", []string{"../files/pg-grimm.txt", "../files/pg-metamorphosis.txt"}, 10 )
 	go c.Monitor( 500*time.Millisecond, done )
 	for !c.Done() {
 		time.Sleep(time.Second)
