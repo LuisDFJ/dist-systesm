@@ -3,10 +3,11 @@ package worker
 import (
 	"bufio"
 	"fmt"
+	"strings"
 	"mr/app/wc"
 	"mr/shared"
+	"mr/internal/types"
 	"os"
-	"time"
 )
 
 func hash( s string, n int ) int {
@@ -56,6 +57,40 @@ func (w *Worker) Map( filename string ) error {
 func (w *Worker) Reduce( bucket int ) error {
 	w.Log( fmt.Sprintf("Processing Reduce: %v", bucket) )
 
-	time.Sleep(time.Second)
+	// KeyValue Collection
+	col := types.Collection{}
+	// Read Files in Current Directory
+	files,err := os.ReadDir(".")
+	if err != nil { return err }
+	for _,file := range files {
+		// Find Valid Files: mr-X-Y.txt
+		if strings.HasPrefix(file.Name(), "mr") && strings.HasSuffix(file.Name(), ".txt") {
+			fileBucket := strings.Split(strings.Replace(file.Name(),".txt", "", 1), "-")[2]
+			// Match For Y == bucket
+			if fileBucket == fmt.Sprintf("%v", bucket+1) {
+				// Read File Content
+				content,err := os.ReadFile( file.Name() )
+				if err != nil { return err }
+				// For each line in content
+				for _,line := range strings.Split(string(content), "\n") {
+					line := strings.Split(line,",")
+					if len(line) != 2 { continue }
+					// Append Key,Value to Collection
+					kv := shared.KeyValue{Key:line[0],Value:line[1]}
+					col = append(col, kv)
+				}
+			}
+		}
+	}
+
+	// Suffle and Reduce
+	filename := fmt.Sprintf("mr-out-%v.txt", w.id+1)
+	file,err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	writer := bufio.NewWriter(file)
+	for kvs := range col.Suffle() {
+		line := fmt.Sprintf( "%v,%v\n", kvs.Key, wc.Reduce(kvs) )
+		writer.WriteString(line)
+	}
+	writer.Flush()
 	return nil
 }
